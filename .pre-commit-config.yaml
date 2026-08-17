@@ -1,0 +1,30 @@
+# The same gates CI runs, wired into git commit. Install once:
+#   uvx pre-commit@4.6.0 install
+# The ruff hooks run the exact repository-wide CI commands, so markdown
+# snippets are covered too (the stock ruff-pre-commit hooks only pass python
+# files). tests/test_toolchain_pins.py holds every version pin in lockstep.
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.3
+    hooks:
+      - id: uv-lock
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format (repo-wide, exactly what CI runs)
+        entry: uvx ruff@0.16.3 format --check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ruff-check
+        name: ruff check (repo-wide, exactly what CI runs)
+        entry: uvx ruff@0.16.3 check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pytest
+        name: pytest (the whole suite, sub-second)
+        entry: uv run --locked --group dev pytest -q
+        language: system
+        pass_filenames: false
+        always_run: true

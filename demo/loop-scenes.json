@@ -1,0 +1,365 @@
+{
+ "title": "the whole loop · verbatim excerpts, ps3.cd.percona.com, 2026-08-14 · long lines shortened, omitted lines marked …",
+ "static_scene": 2,
+ "scenes": [
+  {
+   "chip": "1/7 · doctor: preflight, writes nothing",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview doctor --set pxb-8.1"
+    ],
+    [
+     "out",
+     "jenkins    https://ps3.cd.percona.com"
+    ],
+    [
+     "ok",
+     "  PASS  authenticated as nogueiraanderson"
+    ],
+    [
+     "ok",
+     "  PASS  /previews folder exists"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "out",
+     "ref        https://github.com/nogueiraanderson/jenkins-pipelines @ fix-compile"
+    ],
+    [
+     "ok",
+     "  PASS  resolves to fe9d5674f3e686b90ca52822346a09545710db74 via refs/heads/fix-compile"
+    ],
+    [
+     "out",
+     "render     set pxb-8.1 (6 jobs)"
+    ],
+    [
+     "ok",
+     "  PASS  all 6 requested jobs rendered"
+    ],
+    [
+     "warn",
+     "  WARN  3 build-time fetches leave the fork (`up` refuses these"
+    ],
+    [
+     "out",
+     "        without --allow-foreign-fetch):"
+    ],
+    [
+     "dim",
+     "        pxb/v2/jenkins/percona-xtrabackup-8.1-compile-pipeline.groovy:68 (canonical) https://github.com/Percona-Lab/jenkins-pipelines"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "ok",
+     "READY"
+    ]
+   ]
+  },
+  {
+   "chip": "2/7 · gate G12 refuses a silent foreign fetch",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview up --set pxb-8.1"
+    ],
+    [
+     "out",
+     "set    pxb-8.1 (6 jobs)"
+    ],
+    [
+     "out",
+     "ref    fix-compile -> fe9d5674f3e686b90ca52822346a09545710db74 (anchor refs/heads/fix-compile)"
+    ],
+    [
+     "out",
+     "target /job/previews/job/preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "warn",
+     "WARNING 3 build-time fetches leave your fork. Changes to"
+    ],
+    [
+     "out",
+     "        what they fetch are NOT in this preview:"
+    ],
+    [
+     "dim",
+     "        pxb/v2/jenkins/percona-xtrabackup-8.1-compile-pipeline.groovy:68 (canonical) https://github.com/Percona-Lab/jenkins-pipelines"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "err",
+     "ERROR: 3 build-time fetches would silently test code outside your fork"
+    ],
+    [
+     "warn",
+     "  fix: point git fetches at your fork (`checkout scm`), add sibling jobs to the set, or acknowledge with `up ... --allow-foreign-fetch`"
+    ]
+   ]
+  },
+  {
+   "chip": "3/7 · acknowledge, publish, pinned to your commit",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview up --set pxb-8.1 --allow-foreign-fetch"
+    ],
+    [
+     "out",
+     "set    pxb-8.1 (6 jobs)"
+    ],
+    [
+     "out",
+     "ref    fix-compile -> fe9d5674f3e686b90ca52822346a09545710db74 (anchor refs/heads/fix-compile)"
+    ],
+    [
+     "out",
+     "target /job/previews/job/preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "warn",
+     "WARNING 3 build-time fetches leave your fork. Changes to"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "ok",
+     "gates  all pre-upload gates passed for 6 jobs"
+    ],
+    [
+     "ok",
+     "create preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "ok",
+     "verify read-back clean for 6 jobs"
+    ],
+    [
+     "ok",
+     "enable 6 jobs, verified buildable"
+    ],
+    [
+     "ok",
+     "tab    preview-nogueiraanderson-pxb-8.1-fix-compile shows 6 jobs"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "url",
+     "published https://ps3.cd.percona.com/job/previews/job/preview-nogueiraanderson-pxb-8.1-fix-compile/"
+    ],
+    [
+     "out",
+     "pinned    fe9d5674f3e686b90ca52822346a09545710db74"
+    ],
+    [
+     "warn",
+     "foreign   3 build-time fetches outside your fork (WARNING above)"
+    ]
+   ]
+  },
+  {
+   "chip": "4/7 · run the next stage, cost stated first",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile --yes"
+    ],
+    [
+     "out",
+     "stage  compile (picked automatically, green so far: none)"
+    ],
+    [
+     "out",
+     "builds 1: percona-xtrabackup-8.1-compile-pipeline"
+    ],
+    [
+     "dim",
+     "cost   each build provisions its own worker, plus a shared launcher. Expect up to 2 machines."
+    ],
+    [
+     "ok",
+     "queued percona-xtrabackup-8.1-compile-pipeline"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "dim",
+     "watch  jenkins-preview status preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "then   jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile --stage test   (once this stage is green)"
+    ]
+   ]
+  },
+  {
+   "chip": "5/7 · parameters, validated before anything triggers",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile --stage compile -p DOCKER_OS=oraclelinux:9 --yes"
+    ],
+    [
+     "out",
+     "stage  compile"
+    ],
+    [
+     "out",
+     "builds 1: percona-xtrabackup-8.1-compile-pipeline"
+    ],
+    [
+     "ok",
+     "param  DOCKER_OS=oraclelinux:9"
+    ],
+    [
+     "out",
+     "default 6 other declared parameters keep their defaults"
+    ],
+    [
+     "dim",
+     "cost   each build provisions its own worker, plus a shared launcher. Expect up to 2 machines."
+    ],
+    [
+     "ok",
+     "queued percona-xtrabackup-8.1-compile-pipeline"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "dim",
+     "then   jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile --stage test -p DOCKER_OS=oraclelinux:9   (once this stage is green)"
+    ]
+   ]
+  },
+  {
+   "chip": "6/7 · pushed more commits? sync swaps in the new tip",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview sync preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "out",
+     "sync   preview-nogueiraanderson-pxb-8.1-fix-compile: fe9d5674f3e6 -> c78c990ea525 on fix-compile"
+    ],
+    [
+     "dim",
+     "…"
+    ],
+    [
+     "ok",
+     "ack    inheriting the acknowledgment stamped at publish (3 blocking fetches, unchanged)"
+    ],
+    [
+     "ok",
+     "gates  all pre-upload gates passed for 6 jobs"
+    ],
+    [
+     "out",
+     "swap   publishing the replacement as preview-nogueiraanderson-pxb-8.1-fix-compile-sw89ae23 first"
+    ],
+    [
+     "ok",
+     "create preview-nogueiraanderson-pxb-8.1-fix-compile-sw89ae23"
+    ],
+    [
+     "ok",
+     "verify read-back clean for 6 jobs"
+    ],
+    [
+     "ok",
+     "enable 6 jobs, verified buildable"
+    ],
+    [
+     "dim",
+     "deleted view preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "deleted folder preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "out",
+     "rename preview-nogueiraanderson-pxb-8.1-fix-compile-sw89ae23 -> preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "ok",
+     "tab    preview-nogueiraanderson-pxb-8.1-fix-compile shows 6 jobs"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "out",
+     "pinned    c78c990ea525f8423f23555692becf26f735254f"
+    ]
+   ]
+  },
+  {
+   "chip": "7/7 · leave no trace",
+   "lines": [
+    [
+     "cmd",
+     "$ jenkins-preview down preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "deleted view preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "dim",
+     "deleted folder preview-nogueiraanderson-pxb-8.1-fix-compile"
+    ],
+    [
+     "ok",
+     "clean"
+    ],
+    [
+     "out",
+     ""
+    ],
+    [
+     "cmd",
+     "$ jenkins-preview list"
+    ],
+    [
+     "dim",
+     "no previews"
+    ]
+   ]
+  }
+ ]
+}
