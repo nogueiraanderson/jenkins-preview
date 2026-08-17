@@ -2,6 +2,10 @@
 
 These sessions are copy-pasteable. Output is trimmed only where marked (`...`).
 
+Set names like `pxb-8.1` are keys from the session's own sets file, not tool
+vocabulary. Your file defines your names: bare `jenkins-preview sets` lists
+them, and `--set` accepts only those.
+
 ## First-time setup
 
 ```bash

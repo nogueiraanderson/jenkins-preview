@@ -6,9 +6,15 @@ Publish a throwaway copy of a Jenkins job set, pointed at your own fork and bran
 
 ![the whole loop](demo/loop.svg)
 
+Before anything: stand inside your fork checkout of the pipelines repo, on the
+branch under test (every command reads the repo, branch and jobs from where you
+run it), and have an API token from `<your-jenkins>/me/configure`. Put the
+credentials in `~/.config/jenkins-preview/credentials.yaml`, or export the
+three `JENKINS_*` variables ([Credentials](#credentials)). `doctor` names
+whatever is missing.
+
 ```bash
 uv tool install git+https://github.com/nogueiraanderson/jenkins-preview
-export JENKINS_URL=https://ps3.cd.percona.com JENKINS_USER=you JENKINS_TOKEN=...   # or once: credentials.yaml, see Credentials
 
 cd ~/jenkins-pipelines                                     # your fork checkout, on the branch under test
 jenkins-preview sets --example > .jenkins-preview.json     # drafts the sets file from your checkout. Run once, edit, commit
