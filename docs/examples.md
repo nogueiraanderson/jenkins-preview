@@ -6,6 +6,142 @@ Set names like `pxb-8.1` are keys from the session's own sets file, not tool
 vocabulary. Your file defines your names: bare `jenkins-preview sets` lists
 them, and `--set` accepts only those.
 
+## A complete session, start to finish
+
+One real session on a production controller: publish a preview of a fork
+branch, trigger its compile stage with a parameter, watch it, tear it down.
+The checkout carries a committed sets file with three sets, so `--set` is
+explicit here. With a single-set file every command infers it. The session
+also assumes credentials are configured (see the README) and the branch is
+pushed to the fork: `up` pins the pushed tip, never unpushed commits.
+
+```bash
+uv tool install git+https://github.com/nogueiraanderson/jenkins-preview
+cd ~/jenkins-pipelines            # your fork checkout, on the branch under test
+jenkins-preview doctor
+```
+
+```
+jenkins    https://pxb.cd.percona.com
+           creds: url from credentials.yaml (pxb), user from credentials.yaml (pxb), token from credentials.yaml (pxb)
+  PASS  authenticated as nogueiraanderson
+  PASS  /previews folder exists
+           note: permissions are not probed here, because doctor never writes.
+           A 403 can still appear on the first `up`.
+sets
+  FAIL  --set was not given and this checkout does not single one out
+  fix: pass --set, one of: pxb-8.0, pxb-8.1, pxb-9.x
+
+NOT READY
+```
+
+Three sets share this checkout's directory, so the tool asks rather than
+guesses. Name the set and doctor goes green:
+
+```bash
+jenkins-preview doctor --set pxb-8.1
+```
+
+```
+jenkins    https://pxb.cd.percona.com
+           creds: url from credentials.yaml (pxb), user from credentials.yaml (pxb), token from credentials.yaml (pxb)
+  PASS  authenticated as nogueiraanderson
+  PASS  /previews folder exists
+           note: permissions are not probed here, because doctor never writes.
+           A 403 can still appear on the first `up`.
+source https://github.com/nogueiraanderson/jenkins-pipelines @ fix-compile (inferred from this checkout)
+ref        https://github.com/nogueiraanderson/jenkins-pipelines @ fix-compile
+  PASS  resolves to dbf83e015fd459d2015fe5d62d20fd83cc49459d via refs/heads/fix-compile
+...
+render     set pxb-8.1 (6 jobs)
+  PASS  all 6 requested jobs rendered
+  PASS  every build-time fetch stays on the fork
+
+READY
+```
+
+The fetch check's result depends on the branch's pipeline code: this branch
+points its checkouts at the fork (`checkout scm`), so nothing leaves it. A
+branch whose scripts fetch the canonical repo warns instead, and `up` refuses
+without an acknowledgment (shown in the fork section below).
+
+```bash
+jenkins-preview up --set pxb-8.1
+```
+
+```
+source https://github.com/nogueiraanderson/jenkins-pipelines @ fix-compile (inferred from this checkout)
+set    pxb-8.1 (6 jobs)
+ref    fix-compile -> dbf83e015fd459d2015fe5d62d20fd83cc49459d (anchor refs/heads/fix-compile)
+target /job/previews/job/preview-nogueiraanderson-pxb-8.1-fix-compile
+view   preview-nogueiraanderson-pxb-8.1-fix-compile (root tab)
+gates  all pre-upload gates passed for 6 jobs
+create preview-nogueiraanderson-pxb-8.1-fix-compile
+verify read-back clean for 6 jobs
+enable 6 jobs, verified buildable
+tab    preview-nogueiraanderson-pxb-8.1-fix-compile shows 6 jobs
+
+published https://pxb.cd.percona.com/job/previews/job/preview-nogueiraanderson-pxb-8.1-fix-compile/
+tab       https://pxb.cd.percona.com/view/preview-nogueiraanderson-pxb-8.1-fix-compile/
+pinned    dbf83e015fd459d2015fe5d62d20fd83cc49459d
+run       jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile
+teardown  jenkins-preview down preview-nogueiraanderson-pxb-8.1-fix-compile
+```
+
+Trigger the compile stage with a parameter, watch it, and tear down when done:
+
+```bash
+jenkins-preview run --stage compile -p DOCKER_OS=oraclelinux:9 --yes
+```
+
+```
+folder: preview-nogueiraanderson-pxb-8.1-fix-compile (your preview of branch fix-compile)
+stage  compile
+builds 1: percona-xtrabackup-8.1-compile-pipeline
+param  DOCKER_OS=oraclelinux:9
+default 6 other declared parameters keep their defaults
+cost   each build provisions its own worker, plus a shared launcher. Expect up to 2 machines.
+queued percona-xtrabackup-8.1-compile-pipeline
+
+watch  jenkins-preview status preview-nogueiraanderson-pxb-8.1-fix-compile
+then   jenkins-preview run preview-nogueiraanderson-pxb-8.1-fix-compile --stage test -p DOCKER_OS=oraclelinux:9   (once this stage is green)
+```
+
+```bash
+jenkins-preview status
+```
+
+```
+folder: preview-nogueiraanderson-pxb-8.1-fix-compile (your preview of branch fix-compile)
+folder preview-nogueiraanderson-pxb-8.1-fix-compile
+set    pxb-8.1
+pinned dbf83e015fd459d2015fe5d62d20fd83cc49459d
+repo   https://github.com/nogueiraanderson/jenkins-pipelines (anchor refs/heads/fix-compile)
+tab    https://pxb.cd.percona.com/view/preview-nogueiraanderson-pxb-8.1-fix-compile/
+branch tip matches the pin
+
+job                                              color        last build
+percona-xtrabackup-8.1-compile-param             notbuilt     - -
+percona-xtrabackup-8.1-compile-pipeline          notbuilt_anime build 1 running
+...
+```
+
+Wait until `status` shows the build has finished (`down` refuses while builds
+run), then tear down:
+
+```bash
+jenkins-preview down preview-nogueiraanderson-pxb-8.1-fix-compile --yes
+```
+
+```
+deleted view preview-nogueiraanderson-pxb-8.1-fix-compile
+deleted folder preview-nogueiraanderson-pxb-8.1-fix-compile
+clean
+```
+
+The sections below take each step apart: drafting the sets file, refusals and
+their fixes, syncing after new commits, cleanup, and parameters.
+
 ## First-time setup
 
 ```bash
@@ -65,7 +201,7 @@ Run `doctor` whenever something feels off, it writes nothing. The WARN block
 lists code a preview would still fetch from the main repo; `up` needs
 `--allow-foreign-fetch` to accept that ([gates.md](gates.md)).
 
-## The whole loop, arguments inferred
+## Inference and confirmation prompts
 
 Inside the checkout, the set and the folder are inferred, so no names are
 needed. The session below uses two throwaway smoke jobs:
