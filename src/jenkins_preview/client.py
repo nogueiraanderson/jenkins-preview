@@ -77,6 +77,29 @@ def assert_write_path(path: str) -> None:
         )
 
 
+def assert_restore_path(path: str, job: str) -> None:
+    """Gate G12. The multijob repair may rewrite exactly one top-level config.xml.
+
+    The multijob plugin's folder-blind delete listener strips phases from
+    TOP-LEVEL MultiJobProjects when a same-named preview copy is deleted (see
+    multijob.py). Restoring the victim means writing outside /previews, so it
+    gets its own narrow gate rather than widening G1: one safe top-level job
+    name, the config.xml endpoint, nothing else. Only restore_job_config()
+    passes it, and multijob.py only calls that with a config it read from the
+    same job moments earlier.
+    """
+    if not SAFE_NAME.fullmatch(job):
+        die(
+            f"refusing to restore an unsafe job name {job!r}",
+            "restored job names may contain only letters, digits, dot, dash and underscore",
+        )
+    if path != f"/job/{job}/config.xml":
+        die(
+            f"refusing an unrecognised restore path: {path}",
+            "a repair may only write a top-level job's config.xml",
+        )
+
+
 def assert_view_path(path: str, expected_name: str) -> None:
     """Gate G11. A root view write may address exactly one generated view name.
 
@@ -145,11 +168,14 @@ class Jenkins:
         method: str | None = None,
         content_type: str | None = None,
         view_name: str | None = None,
+        restore_job: str | None = None,
     ) -> tuple[int, str]:
         # The gate sits here so nothing can write without passing one of them.
         if (method or "GET").upper() != "GET" or data is not None:
             if view_name is not None:
                 assert_view_path(path, view_name)
+            elif restore_job is not None:
+                assert_restore_path(path, restore_job)
             else:
                 assert_write_path(path)
 
@@ -207,6 +233,18 @@ class Jenkins:
         self, path: str, data: bytes = b"", content_type: str | None = None
     ) -> tuple[int, str]:
         return self._request(path, data=data, method="POST", content_type=content_type)
+
+    def restore_job_config(self, job: str, config_xml: str) -> None:
+        """Restore a top-level job's config.xml (gate G12, multijob repair only)."""
+        quoted = urllib.parse.quote(job, safe="")
+        status, _ = self._request(
+            f"/job/{quoted}/config.xml",
+            data=config_xml.encode(),
+            method="POST",
+            content_type="application/xml",
+            restore_job=job,
+        )
+        self.expect(status, f"/job/{job}/config.xml", (200,))
 
     def create_view(self, name: str, config_xml: str) -> tuple[int, str]:
         """Create a root view. URL built here so no caller can supply a path."""

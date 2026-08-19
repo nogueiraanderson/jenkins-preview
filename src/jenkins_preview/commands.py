@@ -34,6 +34,11 @@ from .folders import (
     view_marker,
 )
 from .gitref import branch_of, checkout_at, local_context, resolve_ref
+from .multijob import (
+    assert_no_phase_collisions,
+    collision_snapshot,
+    repair_stripped_projects,
+)
 from .names import SAFE_NAME, check_name, check_repo_url, derived_folder_name, slug_text
 from .render import DEFINITION_BLOCK, discover_names, render
 from .sets import (
@@ -465,6 +470,12 @@ def _publish_flow(
                     "delete it first, or publish with a different --name. This tool never "
                     "adopts a view it did not create",
                 )
+
+    # Same-named copies are safe to CREATE, but tearing them down later fires
+    # the multijob plugin's folder-blind delete listener against production
+    # (multijob.py). Refused here, before anything is written, dry-run included,
+    # so a --dry-run rehearsal reports the collision too.
+    assert_no_phase_collisions(jenkins, job_set.jobs)
 
     description = job_description(
         job_set=job_set.name, sha=sha, repo=repo, branch=branch_of(anchor)
@@ -1266,10 +1277,16 @@ def _teardown(
                 die(f"could not delete the root view {view}", "delete it by hand, then retry")
             say(f"deleted view {view}")
 
+    # Previews published before the up-time collision gate can still carry
+    # copies whose deletion strips live multijob phases (multijob.py). Bracket
+    # the delete: snapshot the projects at risk, then restore any the listener
+    # rewrote.
+    snapshot = collision_snapshot(jenkins, [job["name"] for job in data.get("jobs", [])])
     jenkins.post(f"{path}/doDelete")
     if jenkins.exists(path):
         die(f"{folder} still exists after delete", "check permissions and retry")
     say(f"deleted folder {folder}")
+    repair_stripped_projects(jenkins, snapshot)
 
 
 def down(jenkins: Jenkins, args: argparse.Namespace) -> int:

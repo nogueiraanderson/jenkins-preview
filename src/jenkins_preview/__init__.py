@@ -6,7 +6,7 @@ chooses its own agent label and credentials, so the folder boundary is
 isolation for trusted code only.
 """
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 PREVIEW_ROOT = "previews"
 """Top-level Jenkins folder that every write must land inside (gate G1)."""
