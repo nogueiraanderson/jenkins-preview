@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><project>
+  <description>Publish a throwaway preview of your jenkins-pipelines fork into /previews. No local setup needed: the build installs the tool itself. If your fork has no committed .jenkins-preview.json, curated defaults are used (sets pxb-8.0, pxb-8.1, pxb-9.x: compile + test pipelines). The preview folder appears next to this job as preview-&lt;service&gt;-&lt;NAME&gt;.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>FORK_URL</name>
+          <description>Git URL of YOUR jenkins-pipelines fork</description>
+          <defaultValue>https://github.com/Percona-Lab/jenkins-pipelines</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH</name>
+          <description>Branch on your fork to preview</description>
+          <defaultValue>master</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SET</name>
+          <description>Set name from the fork's committed .jenkins-preview.json</description>
+          <defaultValue>pxb-v2-jenkins</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>NAME</name>
+          <description>Preview name, e.g. pxb-minio; becomes the folder name suffix</description>
+          <defaultValue/>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      <hudson.model.BooleanParameterDefinition><name>ALLOW_FOREIGN_FETCH</name><description>Acknowledge build-time fetches that leave your fork. The pxb pipelines fetch run-test and pipeline code from the canonical repo, so previews do not cover those files. Leave enabled unless your set is fully self-contained.</description><defaultValue>true</defaultValue></hudson.model.BooleanParameterDefinition></parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>launcher-x64</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -euo pipefail
+export HOME="$WORKSPACE/.home"
+mkdir -p "$HOME"
+export PATH="$HOME/.local/bin:$PATH"
+command -v uv &gt;/dev/null 2&gt;&amp;1 || curl -LsSf https://astral.sh/uv/install.sh | sh &gt;/dev/null
+export JENKINS_URL="https://pxb.cd.percona.com"
+TOOL='git+https://github.com/nogueiraanderson/jenkins-preview@main'
+
+echo "== cloning $FORK_URL @ $BRANCH"
+rm -rf checkout
+git clone --quiet --branch "$BRANCH" "$FORK_URL" checkout
+cd checkout
+if [ ! -f .jenkins-preview.json ]; then
+  echo "NOTE: this fork/branch carries no .jenkins-preview.json; using the curated pxb defaults (sets: pxb-8.0, pxb-8.1, pxb-9.x)"
+  cat &gt; .jenkins-preview.json &lt;&lt;'CURATED_SETS'
+{
+  "sets": {
+    "pxb-8.0": {
+      "yaml_dir": "pxb/v2/jenkins",
+      "jobs": ["percona-xtrabackup-8.0-compile-pipeline", "percona-xtrabackup-8.0-test-pipeline"],
+      "stages": {
+        "compile": ["percona-xtrabackup-8.0-compile-pipeline"],
+        "test": ["percona-xtrabackup-8.0-test-pipeline"]
+      },
+      "stage_order": ["compile", "test"],
+      "consumes": {"test": "compile"}
+    },
+    "pxb-8.1": {
+      "yaml_dir": "pxb/v2/jenkins",
+      "jobs": ["percona-xtrabackup-8.1-compile-pipeline", "percona-xtrabackup-8.1-test-pipeline"],
+      "stages": {
+        "compile": ["percona-xtrabackup-8.1-compile-pipeline"],
+        "test": ["percona-xtrabackup-8.1-test-pipeline"]
+      },
+      "stage_order": ["compile", "test"],
+      "consumes": {"test": "compile"}
+    },
+    "pxb-9.x": {
+      "yaml_dir": "pxb/v2/jenkins",
+      "jobs": ["percona-xtrabackup-9.x-compile-pipeline", "percona-xtrabackup-9.x-test-pipeline"],
+      "stages": {
+        "compile": ["percona-xtrabackup-9.x-compile-pipeline"],
+        "test": ["percona-xtrabackup-9.x-test-pipeline"]
+      },
+      "stage_order": ["compile", "test"],
+      "consumes": {"test": "compile"}
+    }
+  }
+}
+CURATED_SETS
+fi
+echo "== publishing preview"
+EXTRA=()
+if [ "${ALLOW_FOREIGN_FETCH:-false}" = "true" ]; then EXTRA+=(--allow-foreign-fetch); fi
+uvx --from "$TOOL" jenkins-preview up --repo "$FORK_URL" --ref "$BRANCH" --set "$SET" --name "$NAME" --no-root-view "${EXTRA[@]}"
+</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordMultiBinding>
+          <credentialsId>jenkins-preview-service</credentialsId>
+          <usernameVariable>JENKINS_USER</usernameVariable>
+          <passwordVariable>JENKINS_TOKEN</passwordVariable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordMultiBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+  </buildWrappers>
+</project>

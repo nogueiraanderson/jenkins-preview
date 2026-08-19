@@ -1,0 +1,55 @@
+<?xml version="1.1" encoding="UTF-8"?><project>
+  <description>Tear down a preview folder published by preview-up. Pass the same NAME you used there.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>NAME</name>
+          <description>The NAME used at publish time</description>
+          <defaultValue/>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>launcher-x64</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -euo pipefail
+export HOME="$WORKSPACE/.home"
+mkdir -p "$HOME"
+export PATH="$HOME/.local/bin:$PATH"
+command -v uv &gt;/dev/null 2&gt;&amp;1 || curl -LsSf https://astral.sh/uv/install.sh | sh &gt;/dev/null
+export JENKINS_URL="https://pxb.cd.percona.com"
+TOOL='git+https://github.com/nogueiraanderson/jenkins-preview@main'
+
+uvx --from "$TOOL" jenkins-preview down "preview-${JENKINS_USER}-${NAME}" || {
+  echo "NOTE: if the folder name differs, check the exact name under /previews and pass that."
+  exit 1
+}
+</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordMultiBinding>
+          <credentialsId>jenkins-preview-service</credentialsId>
+          <usernameVariable>JENKINS_USER</usernameVariable>
+          <passwordVariable>JENKINS_TOKEN</passwordVariable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordMultiBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+  </buildWrappers>
+</project>
